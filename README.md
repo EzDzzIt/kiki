@@ -1,2 +1,2 @@
 # kikikaikaiclone
-pico8 experiment
+kikikaikai-like in pico-8
