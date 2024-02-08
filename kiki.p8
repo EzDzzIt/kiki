@@ -72,13 +72,19 @@ function _draw()
 end
 -->8
 --tools
+--todo: need to buffer input to
+--get less precise diagonals
+
 function new_actor(act)
 	act.x=64
 	act.y=64
+	act.xsp=0
+	act.ysp=0
 	act.spr=1
 	act.dir=4 --dir is 0-7 clockwise from 12o'clock
+	act.dirbuf=0
 	act.flip=false --sprflip
-	act.ani=0 --animation timer for actor
+	act.ani=1 --animation timer for actor
 end
 
 function pl_locomotion()
@@ -87,33 +93,84 @@ function pl_locomotion()
 	--modify the bitfield to exclude attack buttons
 	local btm = bt&0b001111
 	local bta = bt&0b110000
-	--cases
+	--locomotion cases
 	if btm==0b0100 then --dir0
-		pl.y-=1
+		pl.ysp=-1
+		pl.xsp=0
+		pl.dir=0
 	elseif btm==0b0110 then --dir1
-		pl.y-=1
-		pl.x+=1
+		pl.ysp=-1
+		pl.xsp=1
+		pl.dir=1
 	elseif btm==0b000010 then --dir2
-		pl.x+=1	
+		pl.xsp=1
+		pl.ysp=0
+		pl.dir=2	
 	elseif btm==0b001010 then --dir3
-		pl.y+=1
-		pl.x+=1	
+		pl.ysp=1
+		pl.xsp=1
+		pl.dir=3		
 	elseif btm==0b001000 then --dir4
-		pl.y+=1	
+		pl.ysp=1
+		pl.xsp=0	
+		pl.dir=4
 	elseif btm==0b001001 then --dir5
-		pl.y+=1
-		pl.x-=1
+		pl.ysp=1
+		pl.xsp=-1
+		pl.dir=5
 	elseif	btm==0b000001 then --dir6
-		pl.x-=1
+		pl.xsp=-1
+		pl.ysp=0
+		pl.dir=6
 	elseif btm==0b000101 then --dir7
-		pl.y-=1
-		pl.x-=1
+		pl.ysp=-1
+		pl.xsp=-1
+		pl.dir=7
+	else
+		pl.ysp=0
+		pl.xsp=0
 	end
+	
+	animate_pl(bt)
+	
+	--apply spped
+	pl.y+=pl.ysp
+	pl.x+=pl.xsp
+end
+
+function animate_pl(bt)
+	--first, check for direction change
+	if pl.dir!=pl.dirbuf then
+		pl.ani=1 --reset timer when dir change
+	end
+	--action?
+	if bt|0b000000==0 then
+		pl.ani=1 --reset animation timer
+	else
+		pl.ani+=1
+	end
+		--set sprite base
+	if pl.ani==1 then
+		if pl.dir==0 then
+			pl.spr=17
+			pl.flip=false
+		elseif pl.dir==4 then
+			pl.spr=1
+			pl.flip=false
+		end
+	end
+	
+	if pl.ani%30==0 then
+		pl.spr+=1
+	end
+	
+	--end with updating the direction buffer
+	pl.dirbuf=pl.dir
 end
 -->8
 --debug
 function _debug()
-	print(btn()-0b001001)
+	print(pl.ani)
 end
 __gfx__
 00000000005555000055550000555500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
