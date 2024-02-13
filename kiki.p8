@@ -22,6 +22,7 @@ function start_game()
 	tmst=time() --time when level starts
 	tmcur=0
 	pl_speed=1 --speed upgrade
+	kb=120 --invis frames
 	score=0
 		--dark blue transparent
 	palt(0,false)
@@ -137,7 +138,7 @@ function new_actor(act)
 	act.flip=false --sprflip
 	act.ani=1 --animation timer for actor
 	act.hp=1
-	act.knock={false,0,0,1} --init,dx,dy,timer
+	act.knock={0,0,0,false} --dx,dy,timer
 end
 
 function new_proj()
@@ -203,8 +204,8 @@ function proj_update()
 		local pro = projectiles[i]
 		--apply speed
 		pro.x+=pro.xsp
-		pro.x=flr(pro.x)+0.5--correction for diag
 		pro.y+=pro.ysp
+		pro.x=flr(pro.x)+0.5--correction for diag
 		pro.y=flr(pro.y)+0.5
 		--check collisions with en
 		for j=1,#en do
@@ -299,23 +300,24 @@ function pl_update()
 		pl.xsp=0
 	end
 	
-	animate_pl(btm)
-	
 	--apply knockback and invincibility
-	if pl.knock[1] then
-		--todo
+	if pl.knock[4] then
+		local kb=3
+		if pl.knock[1]>0 then
+			pl.xsp+=kb
+		else
+			pl.xsp-=kb
+		end
 		if pl.knock[2]>0 then
-			pl.xsp+=10
+			pl.ysp+=kb
 		else
-			pl.xsp-=10
+			pl.ysp-=kb
 		end
-		if pl.knock[3]>0 then
-			pl.ysp+=10
-		else
-			pl.ysp-=10
-		end
-	--	pl.knock[4]=15 --15f window
-		pl.knock[1]=false
+		pl.knock[4]=false --run this code one time
+	elseif pl.knock[3]>0 then
+		pl.knock[3]-=1 --decrement invis
+	else
+		pl.knock[3]=0 --ensure 0?
 	end
 	
 	--apply speed
@@ -324,14 +326,13 @@ function pl_update()
 		--correct diag
 	pl.y=flr(pl.y)+0.5
 	pl.x=flr(pl.x)+0.5
-	--make sure there are no collisions
-	--for i=
-	--chk_col(pl.x,pl.y,
-	if fget(mget(pl.x/8,pl.y/8),0) then
+	--map collision check
+	if fget(mget((pl.x+3)/8,(pl.y+3)/8),0) then
 		pl.y-=pl.ysp
 		pl.x-=pl.xsp
 	end
 
+	animate_pl(bt)
 	
 	--check for attack input
 	if bta==0b100000 then
@@ -350,14 +351,8 @@ function pl_update()
 end
 
 function animate_pl(bt)
-	--action?
-	if bt|0b000000==0 then
-		pl.ani=1 --reset animation timer
-	else
-		pl.ani+=1
-	end
 	--set sprite base if dir changes
-	if pl.dir!=pl.dirbuf then
+	if pl.dir!=pl.dirbuf or pl.ani>=45 then
 		pl.flip=false --saving tokems
 		pl.ani=1 --reset animation time
 		if pl.dir==0 then
@@ -382,19 +377,17 @@ function animate_pl(bt)
 		end
 	end
 	
-	if pl.ani%60==0 then
-		pl.spr-=2
-	elseif pl.ani%40==0 then
+	if pl.ani==30 then
 		pl.spr+=1
-	elseif pl.ani%20==0 then
+	elseif pl.ani==15 then
 		pl.spr+=1
 	end
-	
-	--animation check
-	if pl.ani>60 then
+	--increment animation timer
+	if bt!=0 then
+		pl.ani+=1
+	else
 		pl.ani=1
 	end
-	
 	--end with updating the direction buffer
 	pl.dirbuf=pl.dir
 end
@@ -427,15 +420,14 @@ function en_update()
 		end
 		--see if they got to the player
 		--but only if not invis
-		if pl.knock[4]==0 then
+		if pl.knock[3]==0 then
 			if chk_col(en[i],pl) then
 				sfx(1)
+				
 				pl.hp-=1
-				--set knockback data
-				pl.knock={true,pl.x-en[i].x,pl.y-en[i].y,360}
+				--set knockback data; 120f invis?
+				pl.knock={pl.x-en[i].x,pl.y-en[i].y,kb,true}
 			end
-		else
-			pl.knock[4]-=1 --decrement invis
 		end
 		--check if enemy is dead and explode
 		if en[i].hp<=0 then
@@ -463,7 +455,9 @@ end
 -->8
 --debug
 function _debug()
-	print(pl.knock[4],0,12)
+	print(pl.knock[3],0,12)
+	print(pl.spr)
+	print(pl.ani)
 end
 __gfx__
 00000000110000111100001111000011110001111100011111000111111111111111111111111111000000000000000000000000000000000000000000000000
