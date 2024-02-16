@@ -561,8 +561,10 @@ if #en!=0 then --only run if there are enemies
 	for i=#en,1,-1 do
 		if t%en[i].mvdelay==0 then
 			local trigarr=trig(pl.x,pl.y,en[i].x,en[i].y)
-			en[i].x+=trigarr[1]
-			en[i].y+=trigarr[2]
+			en[i].xsp=trigarr[1]
+			en[i].ysp=trigarr[2]
+			en[i].x+=en[i].xsp
+			en[i].y+=en[i].ysp
 			en[i].x=flr(en[i].x)+0.5
 			en[i].y=flr(en[i].y)+0.5
 		end
